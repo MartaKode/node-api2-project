@@ -39,11 +39,18 @@ router.get('/:id', (req, res) => {
 
 // get all comments by post id
 router.get('/:id/comments', (req, res) => {
-    Posts.findPostComments(req.params.id)
+
+Posts.findById(req.params.id)
+.then(post => {
+    console.log(post)
+    if(!post[0]){
+       res.status(404).json({message:"Post with that id does not exist"}) 
+    }else{
+        Posts.findPostComments(req.params.id)
         .then(comments => {
-            console.log(comments)
+            // console.log(comments)
             if (!comments[0]) {
-                res.status(404).json({ message: "The post with the specified ID does not exist." })
+                res.status(404).json({ message: "This post has no comments" })
             } else {
                 res.status(200).json(comments)
             }
@@ -52,6 +59,12 @@ router.get('/:id/comments', (req, res) => {
             console.log(err)
             res.status(500).json({ error: "The comments information could not be retrieved." })
         })
+    }
+})
+.catch(err=>{
+    console.log(err)
+})
+  
 })
 
 // `````````POST````````````
@@ -82,7 +95,8 @@ router.post('/', (req, res) => {
 
 // post new comment to a specific post
 router.post('/:id/comments', (req, res) => {
-    Posts.insertComment(req.body)
+    const info = { ...req.body, post_id: req.params.id }
+    Posts.insertComment(info)
         .then(commentid => {
             console.log(commentid)
             Posts.findCommentById(commentid.id)
@@ -135,6 +149,10 @@ router.delete('/:id', (req, res) => {
 // ````````PUT```````````
 // update post by id
 router.put('/:id', (req, res) => {
+
+    if(!req.body.title || !req.body.contents){
+        res.status(400).json({ errorMessage: "Please provide title and contents for the post." })
+    }
     Posts.update(req.params.id, req.body)
         .then(totalUpdated => {
             console.log(totalUpdated)
@@ -154,11 +172,7 @@ router.put('/:id', (req, res) => {
         })
         .catch(err => {
             console.log(err)
-            if(!req.body.title || !req.body.contents){
-                res.status(400).json({ errorMessage: "Please provide title and contents for the post." })
-            }else{
                 res.status(500).json({ error: "The post information could not be modified."})
-            }
         })
 })
 
